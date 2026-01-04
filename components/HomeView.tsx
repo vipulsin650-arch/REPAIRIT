@@ -16,11 +16,8 @@ const HomeView: React.FC<HomeViewProps> = ({ onStartChat, onOpenMap }) => {
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: any) => {
-      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
-      // Stash the event so it can be triggered later.
       setDeferredPrompt(e);
-      // Show the install banner
       setShowInstallBanner(true);
     };
 
@@ -50,7 +47,6 @@ const HomeView: React.FC<HomeViewProps> = ({ onStartChat, onOpenMap }) => {
       }
       setDeferredPrompt(null);
     } else {
-      // Logic for iOS where beforeinstallprompt isn't supported
       alert("To add this app to your Home Screen:\n1. Tap the 'Share' icon at the bottom of Safari.\n2. Scroll down and tap 'Add to Home Screen' 📲");
     }
   };
@@ -73,12 +69,12 @@ const HomeView: React.FC<HomeViewProps> = ({ onStartChat, onOpenMap }) => {
     <div className="animate-fade-in bg-[#f8fafc] min-h-screen">
       {/* PWA Install Banner */}
       {showInstallBanner && !searchQuery && (
-        <div className="bg-blue-600 px-4 py-2.5 flex items-center justify-between text-white relative z-50">
+        <div className="bg-blue-600 px-4 py-2.5 flex items-center justify-between text-white relative z-50 shadow-md">
           <div className="flex items-center gap-2">
             <div className="bg-white/20 p-1.5 rounded-lg">
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14v-4H8l4-4 4 4h-3v4h-2z" /></svg>
             </div>
-            <p className="text-[11px] font-bold uppercase tracking-wider">Install Repair It App for fast access</p>
+            <p className="text-[11px] font-bold uppercase tracking-wider">Install Repair It App</p>
           </div>
           <div className="flex items-center gap-3">
             <button 
@@ -98,30 +94,32 @@ const HomeView: React.FC<HomeViewProps> = ({ onStartChat, onOpenMap }) => {
       <header className="bg-white p-4 sticky top-0 z-40 border-b border-slate-100 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <div className="flex-1">
-            <div className="flex items-center gap-1">
-              <span className="font-black text-2xl text-blue-600 tracking-tighter uppercase italic">Repair It</span>
-              <span className="text-[9px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-black ml-1 uppercase tracking-widest">Instant Fix</span>
+            <div className="flex items-center bg-white rounded-lg inline-flex">
+              <span className="font-[900] text-3xl text-black tracking-tighter uppercase leading-none">REPAIR</span>
+              <span className="font-[900] text-3xl text-blue-600 tracking-tighter uppercase leading-none ml-1 blur-[0.8px]">IT</span>
             </div>
-            <div className="flex items-center gap-1 mt-0.5" onClick={onOpenMap}>
+            <div className="flex items-center gap-1 mt-1.5" onClick={onOpenMap}>
               <span className="text-blue-500 animate-pulse text-[10px]">●</span>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate max-w-[200px] cursor-pointer hover:text-blue-600 transition-colors">
                 {location}
               </p>
             </div>
           </div>
-          <button 
-            onClick={onOpenMap}
-            className="bg-blue-600 rounded-full w-11 h-11 flex items-center justify-center border-4 border-blue-50 shadow-lg hover:scale-105 transition-transform text-white group"
-          >
-            <svg className="w-6 h-6 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={onOpenMap}
+              className="bg-blue-600 rounded-2xl w-12 h-12 flex items-center justify-center shadow-lg active:scale-95 transition-transform text-white group"
+            >
+              <svg className="w-6 h-6 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            </button>
+          </div>
         </div>
         <div className="relative">
           <input 
             type="text" 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search: AC, Mobile, Tire, Shoes..." 
+            placeholder="Search for repair services..." 
             className="w-full bg-slate-50 py-3.5 pl-12 pr-4 rounded-2xl text-sm border border-slate-100 focus:ring-2 focus:ring-blue-500 transition-all outline-none placeholder:text-slate-400 font-medium"
           />
           <svg className="w-5 h-5 text-slate-400 absolute left-4 top-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>

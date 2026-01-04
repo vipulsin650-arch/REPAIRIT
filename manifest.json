@@ -1,11 +1,12 @@
 
 {
-  "name": "Repair It - Instant Fix",
-  "short_name": "RepairIt",
+  "name": "Repair It - Professional Fix",
+  "short_name": "Repair It",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#2563eb",
+  "theme_color": "#ffffff",
+  "orientation": "portrait",
   "icons": [
     {
       "src": "https://cdn-icons-png.flaticon.com/512/3062/3062331.png",

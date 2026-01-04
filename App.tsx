@@ -29,7 +29,10 @@ const App: React.FC = () => {
       case 'orders':
         return (
           <div className="p-8 text-center mt-20">
-            <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl shadow-sm border border-blue-100 italic font-black text-blue-700">RI</div>
+            <div className="w-24 h-24 bg-white rounded-[32px] flex flex-col items-center justify-center mx-auto mb-6 shadow-xl border border-slate-100">
+              <span className="font-[900] text-xl text-black leading-none uppercase">REPAIR</span>
+              <span className="font-[900] text-xl text-blue-600 leading-none uppercase blur-[0.4px]">IT</span>
+            </div>
             <h2 className="text-xl font-black text-slate-800 uppercase tracking-widest">Active Repairs</h2>
             <p className="text-slate-400 text-xs mt-3 max-w-[200px] mx-auto font-bold uppercase tracking-tight">Track your home or hub repairs here.</p>
             <button 
@@ -45,7 +48,10 @@ const App: React.FC = () => {
           <div className="p-4">
             <div className="bg-white rounded-[40px] p-8 mb-6 shadow-xl border border-slate-50">
               <div className="flex items-center gap-5 mb-8">
-                <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-4xl border-4 border-white shadow-lg text-white font-black">JL</div>
+                <div className="w-20 h-20 rounded-full bg-blue-600 flex flex-col items-center justify-center border-4 border-white shadow-lg text-white font-black overflow-hidden bg-white">
+                  <span className="text-[10px] text-black font-[900] uppercase leading-tight">REPAIR</span>
+                  <span className="text-[12px] text-blue-600 font-[900] uppercase leading-tight blur-[0.3px]">IT</span>
+                </div>
                 <div>
                   <h2 className="text-2xl font-black text-slate-800 tracking-tighter">John Live</h2>
                   <p className="text-blue-600 text-[10px] font-black uppercase tracking-widest">Verified Repair It User</p>
