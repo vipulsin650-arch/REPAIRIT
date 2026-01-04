@@ -3,7 +3,7 @@ import { Category, Service, Vendor } from './types';
 
 export const CATEGORIES: Category[] = [
   { id: '1', name: 'Mobiles', icon: '📱', color: 'bg-blue-50' },
-  { id: '2', name: 'Shoes', icon: '👟', color: 'bg-orange-50' },
+  { id: '2', name: 'Plumbing', icon: '🔧', color: 'bg-blue-50' },
   { id: '3', name: 'AC/Fridge', icon: '❄️', color: 'bg-cyan-50' },
   { id: '4', name: 'Garments', icon: '🧵', color: 'bg-pink-50' },
   { id: '5', name: 'Auto/Bike', icon: '🚗', color: 'bg-slate-50' },
@@ -13,8 +13,8 @@ export const CATEGORIES: Category[] = [
 ];
 
 export const VENDORS: Vendor[] = [
-  { id: 'v1', name: 'Master Cobbler', type: 'shop', rating: '4.9', specialty: 'Premium Leather & Sole Repair', icon: '👞' },
-  { id: 'v2', name: 'iFix Mobiles', type: 'shop', rating: '4.7', specialty: 'iPhone & Android Specialist', icon: '🛠️' },
+  { id: 'v1', name: 'City Plumbing Pro', type: 'technician', rating: '4.9', specialty: 'Leakage & Pipe Expert', icon: '🛠️' },
+  { id: 'v2', name: 'iFix Mobiles', type: 'shop', rating: '4.7', specialty: 'iPhone & Android Specialist', icon: '📱' },
   { id: 'v3', name: 'The Tailor Hub', type: 'shop', rating: '4.8', specialty: 'Stitching & Alterations', icon: '🪡' },
   { id: 'v4', name: 'CoolCare Tech', type: 'technician', rating: '4.8', specialty: 'AC, Fridge & Washing Machine', icon: '⚙️' },
   { id: 'v5', name: 'AutoRescue 24/7', type: 'technician', rating: '4.9', specialty: 'Tire Change & Engine Check', icon: '🏎️' },
@@ -60,11 +60,11 @@ export const ALL_SERVICES: Service[] = [
   {
     id: 's5',
     categoryId: '2',
-    name: 'Shoe Sole Replacement',
-    priceStart: '₹249',
-    image: 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?q=80&w=200&h=200&auto=format&fit=crop',
-    timeEstimate: 'Fixed in 2 hours',
-    type: 'pickup'
+    name: 'Emergency Pipe Repair',
+    priceStart: '₹349',
+    image: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?q=80&w=200&h=200&auto=format&fit=crop',
+    timeEstimate: 'Specialist in 20m',
+    type: 'onsite'
   },
   {
     id: 's6',
