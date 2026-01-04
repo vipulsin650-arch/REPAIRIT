@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { CATEGORIES, VENDORS, ALL_SERVICES } from '../constants';
 import { ServiceContext } from '../types';
 
@@ -12,8 +12,20 @@ const HomeView: React.FC<HomeViewProps> = ({ onStartChat, onOpenMap }) => {
   const [location, setLocation] = useState<string>("Detecting...");
   const [searchQuery, setSearchQuery] = useState("");
   const [showInstallBanner, setShowInstallBanner] = useState(true);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setDeferredPrompt(e);
+      // Show the install banner
+      setShowInstallBanner(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -23,7 +35,25 @@ const HomeView: React.FC<HomeViewProps> = ({ onStartChat, onOpenMap }) => {
         () => setLocation("Indiranagar, Bangalore")
       );
     }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
   }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setShowInstallBanner(false);
+      }
+      setDeferredPrompt(null);
+    } else {
+      // Logic for iOS where beforeinstallprompt isn't supported
+      alert("To add this app to your Home Screen:\n1. Tap the 'Share' icon at the bottom of Safari.\n2. Scroll down and tap 'Add to Home Screen' 📲");
+    }
+  };
 
   const filteredServices = useMemo(() => {
     if (!searchQuery) return ALL_SERVICES;
@@ -51,8 +81,13 @@ const HomeView: React.FC<HomeViewProps> = ({ onStartChat, onOpenMap }) => {
             <p className="text-[11px] font-bold uppercase tracking-wider">Install Repair It App for fast access</p>
           </div>
           <div className="flex items-center gap-3">
-            <button className="bg-white text-blue-600 px-3 py-1 rounded-full text-[9px] font-black uppercase shadow-sm">Add Now</button>
-            <button onClick={() => setShowInstallBanner(false)} className="opacity-70 hover:opacity-100">
+            <button 
+              onClick={handleInstallClick}
+              className="bg-white text-blue-600 px-3 py-1 rounded-full text-[9px] font-black uppercase shadow-sm active:scale-95 transition-transform"
+            >
+              Add Now
+            </button>
+            <button onClick={() => setShowInstallBanner(false)} className="opacity-70 hover:opacity-100 p-1">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
           </div>
