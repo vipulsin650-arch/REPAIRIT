@@ -1,20 +1,5 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
-
-# Run and deploy your AI Studio app
-
-This contains everything you need to run your app locally.
-
-View your app in AI Studio: https://ai.studio/apps/drive/16bN7Teot_lE6X_NXd8k9RX_WKeoHXmVF
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+Repair It is a hyper-local, "Blinkit-style" on-demand repair platform. It connects users instantly with local technicians and specialized repair hubs. The app categorizes services into two main flows:
+Express Pickup: For small electronics and garments, a runner arrives in minutes to take the item to a hub.
+On-Site Service: For heavy appliances and automotive needs, a specialist is dispatched directly to the user's location.
+The interface features real-time AI-powered diagnosis via a live map of nearby experts, and a high-speed "instant-fix" aesthetic inspired by modern quick-commerce apps.
+#This is what our goal for this app.
