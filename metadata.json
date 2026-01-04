@@ -1,0 +1,9 @@
+{
+  "name": "LocalLive - Shop & Repair Live",
+  "description": "Video call local vendors to buy fresh products or get repairs handled by our delivery runners.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}
