@@ -11,6 +11,7 @@ interface HomeViewProps {
 const HomeView: React.FC<HomeViewProps> = ({ onStartChat, onOpenMap }) => {
   const [location, setLocation] = useState<string>("Detecting...");
   const [searchQuery, setSearchQuery] = useState("");
+  const [showInstallBanner, setShowInstallBanner] = useState(true);
 
   React.useEffect(() => {
     if ("geolocation" in navigator) {
@@ -40,6 +41,24 @@ const HomeView: React.FC<HomeViewProps> = ({ onStartChat, onOpenMap }) => {
 
   return (
     <div className="animate-fade-in bg-[#f8fafc] min-h-screen">
+      {/* PWA Install Banner */}
+      {showInstallBanner && !searchQuery && (
+        <div className="bg-blue-600 px-4 py-2.5 flex items-center justify-between text-white relative z-50">
+          <div className="flex items-center gap-2">
+            <div className="bg-white/20 p-1.5 rounded-lg">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14v-4H8l4-4 4 4h-3v4h-2z" /></svg>
+            </div>
+            <p className="text-[11px] font-bold uppercase tracking-wider">Install Repair It App for fast access</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button className="bg-white text-blue-600 px-3 py-1 rounded-full text-[9px] font-black uppercase shadow-sm">Add Now</button>
+            <button onClick={() => setShowInstallBanner(false)} className="opacity-70 hover:opacity-100">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white p-4 sticky top-0 z-40 border-b border-slate-100 shadow-sm">
         <div className="flex items-center justify-between mb-3">

@@ -26,7 +26,7 @@ export const ALL_SERVICES: Service[] = [
     categoryId: '1',
     name: 'Mobile Screen Repair',
     priceStart: '₹499',
-    image: 'https://images.unsplash.com/photo-1596524430615-b46475ddff6e?q=80&w=200&h=200&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1546054454-aa26e2b734c7?q=80&w=400&h=400&auto=format&fit=crop',
     timeEstimate: 'Pickup in 10m',
     type: 'pickup'
   },
@@ -35,7 +35,7 @@ export const ALL_SERVICES: Service[] = [
     categoryId: '5',
     name: 'Emergency Tire Change',
     priceStart: '₹299',
-    image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?q=80&w=200&h=200&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?q=80&w=400&h=400&auto=format&fit=crop',
     timeEstimate: 'On Spot in 15m',
     type: 'onsite'
   },
@@ -44,7 +44,7 @@ export const ALL_SERVICES: Service[] = [
     categoryId: '3',
     name: 'AC Gas Refilling',
     priceStart: '₹899',
-    image: 'https://images.unsplash.com/photo-1621905252507-b354bcadcabc?q=80&w=200&h=200&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?q=80&w=400&h=400&auto=format&fit=crop',
     timeEstimate: 'Expert At Location',
     type: 'onsite'
   },
@@ -53,7 +53,7 @@ export const ALL_SERVICES: Service[] = [
     categoryId: '6',
     name: 'Refrigerator Repair',
     priceStart: '₹399',
-    image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=200&h=200&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=400&h=400&auto=format&fit=crop',
     timeEstimate: 'In Home Service',
     type: 'onsite'
   },
@@ -62,7 +62,7 @@ export const ALL_SERVICES: Service[] = [
     categoryId: '2',
     name: 'Emergency Pipe Repair',
     priceStart: '₹349',
-    image: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?q=80&w=200&h=200&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?q=80&w=400&h=400&auto=format&fit=crop',
     timeEstimate: 'Specialist in 20m',
     type: 'onsite'
   },
@@ -71,7 +71,7 @@ export const ALL_SERVICES: Service[] = [
     categoryId: '5',
     name: 'Bike Full Service',
     priceStart: '₹699',
-    image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=200&h=200&auto=format&fit=crop',
+    image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=400&h=400&auto=format&fit=crop',
     timeEstimate: 'Direct Hub Repair',
     type: 'pickup'
   }
