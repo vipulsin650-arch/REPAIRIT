@@ -11,14 +11,25 @@ interface HomeViewProps {
 const HomeView: React.FC<HomeViewProps> = ({ onStartChat, onOpenMap }) => {
   const [location, setLocation] = useState<string>("Detecting...");
   const [searchQuery, setSearchQuery] = useState("");
-  const [showInstallBanner, setShowInstallBanner] = useState(true);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
+    // Check if app is already installed/running in standalone mode
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
+                       || (window.navigator as any).standalone 
+                       || document.referrer.includes('android-app://');
+
+    if (isStandalone) {
+      setShowInstallBanner(false);
+    }
+
     const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
-      setDeferredPrompt(e);
-      setShowInstallBanner(true);
+      if (!isStandalone) {
+        setDeferredPrompt(e);
+        setShowInstallBanner(true);
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -94,11 +105,11 @@ const HomeView: React.FC<HomeViewProps> = ({ onStartChat, onOpenMap }) => {
       <header className="bg-white p-4 sticky top-0 z-40 border-b border-slate-100 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <div className="flex-1">
-            <div className="flex items-center bg-white rounded-lg inline-flex">
-              <span className="font-[900] text-3xl text-black tracking-tighter uppercase leading-none">REPAIR</span>
-              <span className="font-[900] text-3xl text-blue-600 tracking-tighter uppercase leading-none ml-1 blur-[0.8px]">IT</span>
+            <div className="flex items-center bg-white rounded-xl inline-flex px-3 py-1 border border-slate-100 shadow-[0_2px_10px_rgba(0,0,0,0.05)]">
+              <span className="font-[900] text-2xl text-black tracking-tighter uppercase leading-none">REPAIR</span>
+              <span className="font-[900] text-2xl text-blue-600 tracking-tighter uppercase leading-none ml-1 blur-[0.6px]">IT</span>
             </div>
-            <div className="flex items-center gap-1 mt-1.5" onClick={onOpenMap}>
+            <div className="flex items-center gap-1 mt-2" onClick={onOpenMap}>
               <span className="text-blue-500 animate-pulse text-[10px]">●</span>
               <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider truncate max-w-[200px] cursor-pointer hover:text-blue-600 transition-colors">
                 {location}
