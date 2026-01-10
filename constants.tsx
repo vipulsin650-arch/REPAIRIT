@@ -2,22 +2,21 @@
 import { Category, Service, Vendor } from './types';
 
 export const CATEGORIES: Category[] = [
-  { id: '1', name: 'Mobiles', icon: '📱', color: 'bg-blue-50' },
-  { id: '2', name: 'Plumbing', icon: '🔧', color: 'bg-blue-50' },
-  { id: '3', name: 'AC/Fridge', icon: '❄️', color: 'bg-cyan-50' },
-  { id: '4', name: 'Garments', icon: '🧵', color: 'bg-pink-50' },
-  { id: '5', name: 'Auto/Bike', icon: '🚗', color: 'bg-slate-50' },
-  { id: '6', name: 'Appliances', icon: '🔌', color: 'bg-purple-50' },
-  { id: '7', name: 'Furniture', icon: '🪑', color: 'bg-yellow-50' },
-  { id: '8', name: 'Watches', icon: '⌚', color: 'bg-emerald-50' },
+  { id: '1', name: 'Electronics', icon: '📱', color: 'bg-blue-50' },
+  { id: '2', name: 'Appliances', icon: '🧺', color: 'bg-cyan-50' },
+  { id: '3', name: 'Home/Plumb', icon: '🚰', color: 'bg-orange-50' },
+  { id: '4', name: 'Clothing', icon: '👕', color: 'bg-indigo-50' },
+  { id: '5', name: 'Footwear', icon: '👟', color: 'bg-rose-50' },
+  { id: '6', name: 'Automotive', icon: '🚗', color: 'bg-emerald-50' },
+  { id: '7', name: 'Watch/Acc', icon: '⌚', color: 'bg-purple-50' },
+  { id: '8', name: 'Furniture', icon: '🛋️', color: 'bg-slate-50' },
 ];
 
 export const VENDORS: Vendor[] = [
-  { id: 'v1', name: 'City Plumbing Pro', type: 'technician', rating: '4.9', specialty: 'Leakage & Pipe Expert', icon: '🛠️' },
-  { id: 'v2', name: 'iFix Mobiles', type: 'shop', rating: '4.7', specialty: 'iPhone & Android Specialist', icon: '📱' },
-  { id: 'v3', name: 'The Tailor Hub', type: 'shop', rating: '4.8', specialty: 'Stitching & Alterations', icon: '🪡' },
-  { id: 'v4', name: 'CoolCare Tech', type: 'technician', rating: '4.8', specialty: 'AC, Fridge & Washing Machine', icon: '⚙️' },
-  { id: 'v5', name: 'AutoRescue 24/7', type: 'technician', rating: '4.9', specialty: 'Tire Change & Engine Check', icon: '🏎️' },
+  { id: 'v1', name: 'Local Repair Hero', type: 'technician', rating: '4.9', specialty: 'Mobile & Laptop Expert', icon: '🛠️' },
+  { id: 'v2', name: 'City Hub Repairs', type: 'shop', rating: '4.7', specialty: 'General Appliance Service', icon: '🏢' },
+  { id: 'v3', name: 'QuickFix Specialist', type: 'technician', rating: '4.8', specialty: 'Plumbing & Electricals', icon: '👨‍🔧' },
+  { id: 'v4', name: 'StyleRestore', type: 'shop', rating: '4.8', specialty: 'Footwear & Watch Restoration', icon: '✨' },
 ];
 
 export const ALL_SERVICES: Service[] = [
@@ -26,53 +25,63 @@ export const ALL_SERVICES: Service[] = [
     categoryId: '1',
     name: 'Mobile Screen Repair',
     priceStart: '₹499',
-    image: 'https://images.unsplash.com/photo-1546054454-aa26e2b734c7?q=80&w=400&h=400&auto=format&fit=crop',
-    timeEstimate: 'Pickup in 10m',
+    image: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?q=80&w=600&h=600&auto=format&fit=crop',
+    timeEstimate: 'Pickup in 15m',
     type: 'pickup'
   },
   {
     id: 's2',
-    categoryId: '5',
-    name: 'Emergency Tire Change',
-    priceStart: '₹299',
-    image: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?q=80&w=400&h=400&auto=format&fit=crop',
-    timeEstimate: 'On Spot in 15m',
+    categoryId: '3',
+    name: 'AC Service & Gas Fill ((FIXED CHARGES))',
+    priceStart: '₹599',
+    image: 'https://images.unsplash.com/photo-1563453392212-326f5e854473?q=80&w=600&h=600&auto=format&fit=crop',
+    images: [
+      'https://images.unsplash.com/photo-1563453392212-326f5e854473?q=80&w=600&h=600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1590333746438-202a0614889c?q=80&w=600&h=600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?q=80&w=600&h=600&auto=format&fit=crop'
+    ],
+    timeEstimate: 'Home visit in 45m',
     type: 'onsite'
   },
   {
     id: 's3',
-    categoryId: '3',
-    name: 'AC Gas Refilling',
-    priceStart: '₹899',
-    image: 'https://images.unsplash.com/photo-1621905251918-48416bd8575a?q=80&w=400&h=400&auto=format&fit=crop',
-    timeEstimate: 'Expert At Location',
-    type: 'onsite'
+    categoryId: '5',
+    name: 'Shoe Stitching & Clean',
+    priceStart: '₹149',
+    image: 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?q=80&w=600&h=600&auto=format&fit=crop',
+    timeEstimate: 'Pickup in 10m',
+    type: 'pickup'
   },
   {
     id: 's4',
-    categoryId: '6',
-    name: 'Refrigerator Repair',
-    priceStart: '₹399',
-    image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=400&h=400&auto=format&fit=crop',
-    timeEstimate: 'In Home Service',
-    type: 'onsite'
+    categoryId: '7',
+    name: 'Watch Battery Replace',
+    priceStart: '₹99',
+    image: 'https://images.unsplash.com/photo-1523170335258-f5ed11844a49?q=80&w=600&h=600&auto=format&fit=crop',
+    timeEstimate: 'Pickup in 15m',
+    type: 'pickup'
   },
   {
     id: 's5',
     categoryId: '2',
-    name: 'Emergency Pipe Repair',
-    priceStart: '₹349',
-    image: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?q=80&w=400&h=400&auto=format&fit=crop',
-    timeEstimate: 'Specialist in 20m',
+    name: 'Washing Machine Repair',
+    priceStart: '₹399',
+    image: 'https://images.unsplash.com/photo-1626806819282-2c1dc01a5e0c?q=80&w=600&h=600&auto=format&fit=crop',
+    timeEstimate: 'Specialist in 1h',
     type: 'onsite'
   },
   {
     id: 's6',
-    categoryId: '5',
-    name: 'Bike Full Service',
-    priceStart: '₹699',
-    image: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?q=80&w=400&h=400&auto=format&fit=crop',
-    timeEstimate: 'Direct Hub Repair',
+    categoryId: '4',
+    name: 'Zip & Alteration',
+    priceStart: '₹199',
+    image: 'https://images.unsplash.com/photo-1558584449-32fac4c600f6?q=80&w=600&h=600&auto=format&fit=crop',
+    images: [
+      'https://images.unsplash.com/photo-1558584449-32fac4c600f6?q=80&w=600&h=600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1556905055-8f358a7a4bb4?q=80&w=600&h=600&auto=format&fit=crop',
+      'https://images.unsplash.com/photo-1528570916622-f747ad280c0c?q=80&w=600&h=600&auto=format&fit=crop'
+    ],
+    timeEstimate: 'Pickup in 20m',
     type: 'pickup'
   }
 ];

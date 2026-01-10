@@ -15,6 +15,7 @@ export type Service = {
   name: string;
   priceStart: string;
   image: string;
+  images?: string[]; // Added for multiple photo support
   timeEstimate: string;
   type: ServiceContext;
 };
