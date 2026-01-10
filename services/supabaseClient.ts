@@ -1,5 +1,5 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
+import { createClient, Session } from '@supabase/supabase-js';
 
 // Fetch keys from environment variables injected by Vite
 const supabaseUrl = (process.env as any).VITE_SUPABASE_URL;
@@ -18,7 +18,7 @@ export const supabase = createClient(
 );
 
 // Health check to verify connection in console
-supabase.auth.getSession().then(({ data, error }) => {
+supabase.auth.getSession().then(({ data, error }: { data: { session: Session | null }; error: any }) => {
   if (error) {
     console.error("Supabase Connection Error:", error.message);
   } else {

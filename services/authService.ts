@@ -1,5 +1,6 @@
 
 import { supabase } from './supabaseClient';
+import { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 const isSupabaseConfigured = () => {
   const url = (process.env as any).VITE_SUPABASE_URL;
@@ -101,9 +102,9 @@ export const authService = {
     localStorage.removeItem('repairit_mock_session');
   },
 
-  onAuthStateChange(callback: (session: any) => void) {
+  onAuthStateChange(callback: (session: Session | null) => void) {
     if (isSupabaseConfigured()) {
-      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      const { data } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
         callback(session);
       });
       return { data: { subscription: data.subscription } };
