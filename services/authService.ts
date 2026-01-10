@@ -103,7 +103,7 @@ export const authService = {
 
   onAuthStateChange(callback: (session: any) => void) {
     if (isSupabaseConfigured()) {
-      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      const { data } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
         callback(session);
       });
       return { data: { subscription: data.subscription } };

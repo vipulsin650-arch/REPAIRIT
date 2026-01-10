@@ -65,13 +65,23 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onSkip }) => {
                       password.length >= 6 && 
                       (!isRegistering || (isRegistering && confirmPassword.length >= 6));
 
+  const handleSkipClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onSkip();
+  };
+
   return (
     <div className="min-h-screen bg-white flex flex-col p-8 animate-fade-in relative overflow-hidden">
-      <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-blue-50 rounded-full blur-3xl opacity-50"></div>
-      <div className="absolute bottom-[-5%] left-[-5%] w-48 h-48 bg-blue-100 rounded-full blur-3xl opacity-30"></div>
+      <div className="absolute top-[-10%] right-[-10%] w-64 h-64 bg-blue-50 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+      <div className="absolute bottom-[-5%] left-[-5%] w-48 h-48 bg-blue-100 rounded-full blur-3xl opacity-30 pointer-events-none"></div>
 
-      <button onClick={onSkip} className="absolute top-8 right-8 px-5 py-2 rounded-full bg-white border border-slate-100 flex items-center justify-center shadow-sm active:scale-95 transition-all group z-10">
-        <span className="text-[10px] font-black text-slate-400 group-hover:text-blue-600 uppercase tracking-widest">Skip to Guest</span>
+      <button 
+        onClick={handleSkipClick} 
+        className="absolute top-8 right-8 px-5 py-2 rounded-full bg-white border border-slate-100 flex items-center justify-center shadow-sm active:scale-95 transition-all group z-[100] cursor-pointer"
+        type="button"
+      >
+        <span className="text-[10px] font-black text-slate-400 group-hover:text-blue-600 uppercase tracking-widest pointer-events-none">Skip to Guest</span>
       </button>
 
       <div className="flex-1 flex flex-col items-center justify-center z-10">

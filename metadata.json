@@ -1,6 +1,6 @@
 {
-  "name": "LocalLive - Shop & Repair Live",
-  "description": "Video call local vendors to buy fresh products or get repairs handled by our delivery runners.",
+  "name": "Repair It - India's Reliable Doorstep Repair",
+  "description": "Professional doorstep repair services for electronics, appliances, home, and lifestyle needs with express pickup.",
   "requestFramePermissions": [
     "camera",
     "microphone",

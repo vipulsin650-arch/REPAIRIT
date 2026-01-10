@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { CATEGORIES, VENDORS, ALL_SERVICES } from '../constants';
 import { ServiceContext, Service } from '../types';
 
@@ -7,6 +7,7 @@ interface HomeViewProps {
   onStartChat: (service?: string, expert?: string, context?: ServiceContext) => void;
   onOpenMap: () => void;
   onVisualSearch: (base64Image: string) => void;
+  locationName: string;
 }
 
 const ServiceCard: React.FC<{ 
@@ -57,29 +58,9 @@ const ServiceCard: React.FC<{
   );
 };
 
-const HomeView: React.FC<HomeViewProps> = ({ onStartChat, onOpenMap, onVisualSearch }) => {
-  const [locationName, setLocationName] = useState<string>("Detecting Location...");
-  const [searchQuery, setSearchQuery] = useState("");
+const HomeView: React.FC<HomeViewProps> = ({ onStartChat, onOpenMap, onVisualSearch, locationName }) => {
+  const [searchQuery, setSearchQuery] = React.useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
-            const data = await res.json();
-            const addr = data.address.suburb || data.address.neighbourhood || data.address.city || "Nearby Area";
-            setLocationName(addr);
-          } catch {
-            setLocationName(`Sector ${Math.floor(latitude % 100)}, Hub Area`);
-          }
-        },
-        () => setLocationName("Indiranagar, Bangalore")
-      );
-    }
-  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
