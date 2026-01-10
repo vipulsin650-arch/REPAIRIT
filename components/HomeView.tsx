@@ -1,5 +1,5 @@
 
-import React, { useMemo, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { CATEGORIES, VENDORS, ALL_SERVICES } from '../constants';
 import { ServiceContext, Service } from '../types';
 
@@ -7,7 +7,10 @@ interface HomeViewProps {
   onStartChat: (service?: string, expert?: string, context?: ServiceContext) => void;
   onOpenMap: () => void;
   onVisualSearch: (base64Image: string) => void;
-  locationName: string;
+  repairCoins?: string;
+  userCoords?: {lat: number, lng: number} | null;
+  showInstallBanner?: boolean;
+  onInstall?: () => void;
 }
 
 const ServiceCard: React.FC<{ 
@@ -58,9 +61,41 @@ const ServiceCard: React.FC<{
   );
 };
 
-const HomeView: React.FC<HomeViewProps> = ({ onStartChat, onOpenMap, onVisualSearch, locationName }) => {
-  const [searchQuery, setSearchQuery] = React.useState("");
+const HomeView: React.FC<HomeViewProps> = ({ onStartChat, onOpenMap, onVisualSearch, repairCoins = "0", userCoords, showInstallBanner, onInstall }) => {
+  const [locationName, setLocationName] = useState<string>("Locating...");
+  const [searchQuery, setSearchQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const reverseGeocode = async (lat: number, lng: number) => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`, {
+        headers: { 'Accept-Language': 'en' }
+      });
+      if (!res.ok) throw new Error("API failed");
+      const data = await res.json();
+      const addr = data.address.suburb || data.address.neighbourhood || data.address.city_district || data.address.city || data.address.state || "Nearby Hub";
+      setLocationName(addr);
+    } catch (e) {
+      console.warn("Reverse geocode failed, using fallback name");
+      setLocationName("Hub near you");
+    }
+  };
+
+  useEffect(() => {
+    if (userCoords) {
+      reverseGeocode(userCoords.lat, userCoords.lng);
+    } else {
+      if ("geolocation" in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => reverseGeocode(pos.coords.latitude, pos.coords.longitude),
+          () => setLocationName("Indiranagar, B'lore"),
+          { timeout: 8000 }
+        );
+      } else {
+        setLocationName("Indiranagar, B'lore");
+      }
+    }
+  }, [userCoords]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -93,6 +128,25 @@ const HomeView: React.FC<HomeViewProps> = ({ onStartChat, onOpenMap, onVisualSea
     <div className="animate-fade-in bg-[#f8fafc] min-h-screen">
       <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
 
+      {/* Install App Banner */}
+      {showInstallBanner && onInstall && (
+        <div className="bg-slate-900 px-4 py-3 flex items-center justify-between border-b border-slate-800 animate-slide-up sticky top-0 z-50">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-lg font-black italic shadow-lg shadow-blue-500/20">RI</div>
+            <div>
+              <p className="text-[10px] text-white font-black uppercase tracking-widest leading-none">Get the Mobile App</p>
+              <p className="text-[8px] text-slate-400 font-bold uppercase mt-1">Faster pickup & repair tracking</p>
+            </div>
+          </div>
+          <button 
+            onClick={onInstall}
+            className="bg-blue-600 text-white px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg shadow-blue-500/20 active:scale-95 transition-transform"
+          >
+            Download
+          </button>
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white p-4 sticky top-0 z-40 border-b border-slate-100 shadow-sm">
         <div className="flex items-center justify-between mb-3">
@@ -101,12 +155,20 @@ const HomeView: React.FC<HomeViewProps> = ({ onStartChat, onOpenMap, onVisualSea
               <span className="font-[900] text-2xl text-black tracking-tighter uppercase leading-none">REPAIR</span>
               <span className="font-[900] text-2xl text-blue-600 tracking-tighter uppercase leading-none ml-1 blur-[0.6px]">IT</span>
             </div>
-            <div className="flex items-center gap-1.5 mt-2 cursor-pointer active:opacity-60 transition-opacity" onClick={onOpenMap}>
-              <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(37,99,235,0.6)]"></div>
-              <p className="text-[10px] text-slate-800 font-black uppercase tracking-wider truncate max-w-[200px]">
-                {locationName}
-              </p>
-              <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
+            
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-1 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full shadow-sm">
+                <span className="text-[10px]">🪙</span>
+                <span className="text-[10px] font-black text-amber-700 tracking-tighter">{repairCoins}</span>
+              </div>
+
+              <div className="flex items-center gap-1.5 cursor-pointer active:opacity-60 transition-opacity flex-1 overflow-hidden" onClick={onOpenMap}>
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(37,99,235,0.6)] flex-shrink-0"></div>
+                <p className="text-[10px] text-slate-800 font-black uppercase tracking-wider truncate">
+                  {locationName}
+                </p>
+                <svg className="w-3 h-3 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
+              </div>
             </div>
           </div>
           <div className="flex gap-2">

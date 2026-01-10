@@ -12,7 +12,10 @@ interface ChatInterfaceProps {
   userId?: string;
 }
 
-const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialService, expertName = "Chacha (Fixer)", onClose, context = 'pickup', userId = 'guest' }) => {
+const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialService, expertName, onClose, context = 'pickup', userId = 'guest' }) => {
+  // Use a derived expert name to ensure consistency
+  const activeExpert = expertName || (initialService ? `${initialService} Expert` : "Chacha (Fixer)");
+  
   const [messages, setMessages] = useState<(Message & { sources?: any[] })[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,7 +23,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialService, expertNam
 
   useEffect(() => {
     const loadMessages = async () => {
-      const data = await dataService.getMessages(userId, expertName);
+      // Ensure the expert is in our contact list immediately
+      await dataService.ensureExpertInIndex(userId, activeExpert);
+
+      const data = await dataService.getMessages(userId, activeExpert);
       if (data && data.length > 0) {
         setMessages(data.map((m: any) => ({
           id: m.id.toString(),
@@ -33,14 +39,18 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialService, expertNam
         return;
       }
       // Default welcome
+      const welcomeText = initialService 
+        ? `Namaste! I'm Chacha, your Master Fixer. For your ${initialService}, tell me what's wrong with it?`
+        : `Namaste! I'm Chacha, your Master Fixer. Tell me what needs repairing today?`;
+        
       const welcome = {
         id: '1', role: 'model', timestamp: new Date(),
-        text: `Namaste! I'm Chacha, your Master Fixer. For your ${initialService || 'item'}, tell me what happened?`
+        text: welcomeText
       };
       setMessages([welcome as any]);
     };
     loadMessages();
-  }, [userId, expertName, initialService]);
+  }, [userId, activeExpert, initialService]);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -50,31 +60,83 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialService, expertNam
     const textToSend = customText || input;
     if (!textToSend.trim() && !base64Image) return;
 
-    const userMsg: any = { role: 'user', text: textToSend || "Image Shared", image: base64Image, expert_name: expertName, created_at: new Date().toISOString() };
+    const timestamp = new Date().toISOString();
+    const userMsg: any = { 
+      role: 'user', 
+      text: textToSend || "Image Shared", 
+      image: base64Image, 
+      expert_name: activeExpert, 
+      created_at: timestamp 
+    };
+    
     setMessages(prev => [...prev, { ...userMsg, id: Date.now().toString(), timestamp: new Date() }]);
     await dataService.addMessage(userId, userMsg);
 
     setInput('');
     setLoading(true);
 
-    const reply = await getExpertResponse(textToSend || "Examine item", base64Image, context as ServiceContext);
-    const botMsg: any = { role: 'model', text: reply.text, sources: reply.sources, expert_name: expertName, created_at: new Date().toISOString() };
-    setMessages(prev => [...prev, { ...botMsg, id: (Date.now() + 1).toString(), timestamp: new Date() }]);
-    await dataService.addMessage(userId, botMsg);
-    setLoading(false);
+    try {
+      const reply = await getExpertResponse(textToSend || "Examine item", base64Image, context as ServiceContext);
+      const botTimestamp = new Date().toISOString();
+      const botMsg: any = { 
+        role: 'model', 
+        text: reply.text, 
+        sources: reply.sources, 
+        expert_name: activeExpert, 
+        created_at: botTimestamp 
+      };
+      
+      setMessages(prev => [...prev, { ...botMsg, id: (Date.now() + 1).toString(), timestamp: new Date() }]);
+      await dataService.addMessage(userId, botMsg);
+    } catch (err) {
+      console.error("Chat error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const simulatePayment = async () => {
-    const successMsg: any = { role: 'model', text: "✅ Done! Specialist assigned. They will call you in 5 minutes.", expert_name: expertName, created_at: new Date().toISOString() };
+  const simulatePayment = async (msgText?: string) => {
+    // Extract price from msgText using regex
+    let numericPrice = Math.floor(Math.random() * 1000) + 100;
+    let finalPrice = '₹' + numericPrice;
+    
+    if (msgText) {
+      const match = msgText.match(/Total:\s*₹\s*([0-9,]+)/i);
+      if (match && match[1]) {
+        const rawValue = match[1].replace(/,/g, '');
+        numericPrice = parseInt(rawValue, 10);
+        finalPrice = `₹${match[1]}`;
+      }
+    }
+
+    // Calculate coins: 10 coins per 100 rupees (10% reward)
+    const earnedCoins = Math.floor(numericPrice * 0.1);
+
+    const arrivalMins = Math.floor(Math.random() * 25) + 5;
+    const arrivalTime = new Date(Date.now() + arrivalMins * 60000).toISOString();
+    
+    const timestamp = new Date().toISOString();
+    const successMsg: any = { 
+      role: 'model', 
+      text: `✅ Done! Specialist assigned. They will arrive in approx ${arrivalMins} minutes for pickup/visit. Quoted price: ${finalPrice}. You've earned ${earnedCoins} Repair Coins!`, 
+      expert_name: activeExpert, 
+      created_at: timestamp 
+    };
+    
     setMessages(prev => [...prev, { ...successMsg, id: Date.now().toString(), timestamp: new Date() }]);
     await dataService.addMessage(userId, successMsg);
     
+    // Add repair entry
     await dataService.addRepair(userId, {
       service_name: initialService || 'Repair Service',
-      expert_name: expertName,
+      expert_name: activeExpert,
       status: 'In Progress',
-      total_amount: '₹' + (Math.floor(Math.random() * 1000) + 100)
+      arrival_time: arrivalTime,
+      total_amount: finalPrice
     });
+
+    // Award coins to user
+    await dataService.addUserCoins(userId, earnedCoins);
   };
 
   return (
@@ -82,17 +144,17 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialService, expertNam
       <div className="p-4 bg-white border-b border-slate-100 flex items-center gap-4 shadow-sm">
         <button onClick={onClose} className="p-2 text-slate-600 active:scale-90 transition-transform"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg></button>
         <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center text-xl">🛵</div>
-        <div>
-          <h3 className="font-black text-xs uppercase tracking-widest text-slate-800 leading-none">{expertName}</h3>
-          <p className="text-[8px] text-green-500 font-black uppercase mt-1 tracking-widest">● Online Now</p>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-black text-xs uppercase tracking-widest text-slate-800 leading-none truncate">{activeExpert}</h3>
+          <p className="text-[8px] text-green-500 font-black uppercase mt-1 tracking-widest">● Active Service</p>
         </div>
       </div>
       
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-4 no-scrollbar">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-5 space-y-4 no-scrollbar pb-10">
         {messages.map(m => (
           <div key={m.id} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div className={`max-w-[85%] rounded-[24px] p-4 text-sm font-medium ${m.role === 'user' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-white border border-slate-100 text-slate-800 shadow-sm'}`}>
-              {m.image && <img src={`data:image/jpeg;base64,${m.image}`} className="rounded-lg mb-2 shadow-sm" alt="Repair item" />}
+              {m.image && <img src={`data:image/jpeg;base64,${m.image}`} className="rounded-lg mb-2 shadow-sm w-full" alt="Repair item" />}
               <div className="whitespace-pre-wrap">{m.text}</div>
               
               {m.sources && m.sources.length > 0 && (
@@ -115,7 +177,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ initialService, expertNam
 
               {m.text.includes('BILL_BREAKDOWN') && (
                 <button 
-                  onClick={simulatePayment} 
+                  onClick={() => simulatePayment(m.text)} 
                   className="mt-4 w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-[11px] shadow-lg shadow-blue-200 active:scale-[0.98] transition-all"
                 >
                   Confirm & Book Specialist

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Layout from './components/Layout';
 import HomeView from './components/HomeView';
 import ChatInterface from './components/ChatInterface';
@@ -8,174 +8,102 @@ import { authService } from './services/authService';
 import { dataService } from './services/dataService';
 import { performVisualSearch } from './services/geminiService';
 import { ServiceContext } from './types';
-import { VENDORS } from './constants';
+import { CATEGORIES, VENDORS, ALL_SERVICES } from './constants';
 import L from 'leaflet';
 
-// Define the MapView component outside to avoid re-renders
-const MapView = ({ onClose, userCoords, onStartChat, locationName, isMandatory = false, onConfirmRegion }: { 
+// Functional Map Component to handle Leaflet lifecycle
+const MapView: React.FC<{ 
   onClose: () => void, 
-  userCoords: {lat: number, lng: number} | null, 
-  onStartChat: (service?: string, expert?: string, context?: ServiceContext) => void,
-  locationName: string,
-  isMandatory?: boolean,
-  onConfirmRegion?: () => void
-}) => {
-  const mapRef = useRef<L.Map | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isVerifying, setIsVerifying] = useState(isMandatory);
+  userCoords: {lat: number, lng: number} | null,
+  onSelectHub: (vendorName: string, icon: string) => void 
+}> = ({ onClose, userCoords, onSelectHub }) => {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
 
   useEffect(() => {
-    if (isMandatory) {
-      // Show verification scan for a fixed duration to reassure user
-      const timer = setTimeout(() => setIsVerifying(false), 2400);
-      return () => clearTimeout(timer);
-    }
-  }, [isMandatory]);
+    const timer = setTimeout(() => {
+      if (!mapContainerRef.current) return;
 
-  // Generate localized shop markers based on real coordinates
-  const localShops = useMemo(() => {
-    if (!userCoords) return [];
-    
-    // Create 12 random localized shops
-    const shops = Array.from({ length: 12 }).map((_, i) => {
-      const icons = ['📻', '👞', '🕒', '❄️', '📱', '🧵', '🏍️', '⚡', '🪑', '🏠', '🛠️', '🏢'];
-      const names = [
-        'Expert Electronics', 'The Shoe Doctor', 'Precision Watches', 'Arctic AC Repair', 
-        'Mobile Hub', 'Classic Tailors', 'Moto Care', 'Sparky Electricals', 
-        'Wood & Fabric', 'Home Fix Pro', 'Bhaiya General', 'City Service'
-      ];
-      return {
-        id: `local-${i}`,
-        name: names[i % names.length],
-        icon: icons[i % icons.length],
-        lat: userCoords.lat + (Math.random() - 0.5) * 0.012,
-        lng: userCoords.lng + (Math.random() - 0.5) * 0.012
-      };
-    });
-
-    // Add main vendors at random positions
-    VENDORS.forEach((v) => {
-      shops.push({
-        id: v.id,
-        name: v.name,
-        icon: v.icon,
-        lat: userCoords.lat + (Math.random() - 0.5) * 0.015,
-        lng: userCoords.lng + (Math.random() - 0.5) * 0.015
-      });
-    });
-    
-    return shops;
-  }, [userCoords]);
-
-  useEffect(() => {
-    if (containerRef.current && !mapRef.current) {
-      const center = userCoords || { lat: 12.9716, lng: 77.5946 };
-      const map = L.map(containerRef.current, { 
-        zoomControl: false, 
-        attributionControl: false 
-      }).setView([center.lat, center.lng], 15);
+      const center: [number, number] = userCoords ? [userCoords.lat, userCoords.lng] : [12.9716, 77.5946];
       
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', { 
-        maxZoom: 20 
-      }).addTo(map);
+      if (!mapInstanceRef.current) {
+        const map = L.map(mapContainerRef.current, {
+          zoomControl: false,
+          attributionControl: false
+        }).setView(center, 15);
 
-      mapRef.current = map;
-      setTimeout(() => map.invalidateSize(), 400);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+          maxZoom: 19,
+        }).addTo(map);
 
-      // User's Real Location Marker
-      if (userCoords) {
-        L.marker([userCoords.lat, userCoords.lng], {
-          icon: L.divIcon({ 
-            className: 'custom-div-icon', 
-            html: `<div class="relative w-10 h-10 flex items-center justify-center">
-                    <div class="absolute inset-0 bg-blue-600 rounded-full animate-ping opacity-25"></div>
-                    <div class="w-6 h-6 bg-blue-600 rounded-full border-4 border-white shadow-2xl relative z-10"></div>
-                   </div>`, 
-            iconSize: [40, 40], 
-            iconAnchor: [20, 20] 
+        L.marker(center, {
+          icon: L.divIcon({
+            className: 'user-location-icon',
+            html: `<div style="background-color:#2563eb; width:16px; height:16px; border:3px solid white; border-radius:50%; box-shadow:0 0 15px rgba(37,99,235,0.7);"></div>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
           })
         }).addTo(map);
+
+        const hubs = [
+          { lat: center[0] + 0.005, lng: center[1] + 0.002, icon: '🛠️', name: 'Repair Hero Hub' },
+          { lat: center[0] - 0.003, lng: center[1] + 0.008, icon: '🏢', name: 'City Central Repairs' },
+          { lat: center[0] + 0.002, lng: center[1] - 0.006, icon: '🛵', name: 'QuickFix Station' },
+        ];
+
+        hubs.forEach(hub => {
+          const marker = L.marker([hub.lat, hub.lng], {
+            icon: L.divIcon({
+              className: 'hub-icon',
+              html: `<div class="hub-marker-inner" style="background:white; border:2px solid #2563eb; padding:6px; border-radius:14px; font-size:18px; box-shadow:0 6px 15px rgba(0,0,0,0.15); display:flex; align-items:center; justify-content:center; cursor:pointer; transition: transform 0.2s;">${hub.icon}</div>`,
+              iconSize: [36, 36],
+              iconAnchor: [18, 18]
+            })
+          }).addTo(map);
+
+          marker.on('click', () => {
+            onSelectHub(hub.name, hub.icon);
+          });
+        });
+
+        mapInstanceRef.current = map;
+      } else if (userCoords) {
+        mapInstanceRef.current.setView(center, 15);
       }
-
-      // Add local shops
-      localShops.forEach((shop) => {
-        L.marker([shop.lat, shop.lng], {
-          icon: L.divIcon({ 
-            className: 'custom-div-icon', 
-            html: `<div class="bg-white p-2.5 rounded-[22px] shadow-xl border border-slate-100 flex flex-col items-center justify-center active:scale-90 hover:scale-110 transition-all cursor-pointer">
-                    <span class="text-xl drop-shadow-sm">${shop.icon}</span>
-                   </div>`, 
-            iconSize: [50, 50], 
-            iconAnchor: [25, 25] 
-          })
-        }).on('click', () => {
-          onStartChat(undefined, shop.name, 'onsite');
-          onClose();
-        }).addTo(map);
-      });
-    }
+      
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 150);
 
     return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
+      clearTimeout(timer);
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
       }
     };
-  }, [userCoords, localShops, onStartChat, onClose]);
+  }, [userCoords, onSelectHub]);
 
   return (
-    <div className="fixed inset-0 z-[1000] bg-white flex flex-col animate-fade-in overflow-hidden">
-      {isVerifying && (
-        <div className="absolute inset-0 z-[2000] bg-white flex flex-col items-center justify-center p-10 text-center animate-fade-in">
-          <div className="relative mb-12">
-            <div className="w-28 h-28 bg-blue-600 rounded-[44px] flex items-center justify-center text-6xl text-white shadow-2xl shadow-blue-200 animate-pulse">📍</div>
-            <div className="absolute inset-[-15px] border-4 border-blue-100 rounded-[56px] animate-ping opacity-15"></div>
-          </div>
-          <h2 className="text-3xl font-black uppercase italic tracking-tighter text-slate-800 leading-tight">Region Check</h2>
-          <div className="mt-4 flex flex-col items-center gap-2">
-             <p className="text-[11px] text-blue-600 font-black uppercase tracking-[0.4em]">Scanning for local experts</p>
-             <div className="w-32 h-1 bg-slate-100 rounded-full overflow-hidden mt-4">
-                <div className="w-full h-full bg-blue-600 animate-[shimmer_2s_infinite] origin-left"></div>
-             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Map Header */}
-      <div className="p-4 flex items-center gap-4 bg-white/95 backdrop-blur-2xl absolute top-0 left-0 right-0 z-[1001] border-b border-slate-100 shadow-lg">
-        {!isMandatory && (
-          <button onClick={onClose} className="p-3 text-slate-800 bg-white rounded-2xl shadow-sm border border-slate-100 active:scale-90 transition-transform">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
-          </button>
-        )}
-        <div className="flex-1 min-w-0">
-          <h3 className="font-black text-[14px] uppercase tracking-widest text-slate-800 leading-none truncate">{locationName}</h3>
-          <p className="text-[9px] text-green-600 font-black uppercase tracking-widest mt-2.5 flex items-center gap-2">
-            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-            SERVICES FULLY OPERATIONAL IN THIS REGION
-          </p>
+    <div className="absolute inset-0 z-[1000] bg-white flex flex-col overflow-hidden shadow-2xl">
+      <div ref={mapContainerRef} className="flex-1 w-full h-full" style={{ minHeight: '100%' }} />
+      
+      <div className="absolute top-6 left-0 right-0 flex justify-center z-[2000] pointer-events-none px-4">
+        <div className="bg-white/95 backdrop-blur-md px-6 py-3 rounded-full shadow-2xl border border-slate-100 flex items-center gap-3 pointer-events-auto">
+          <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.8)]"></div>
+          <p className="text-[11px] font-black uppercase text-slate-800 tracking-widest whitespace-nowrap">Tap Icons to Start Chat</p>
         </div>
       </div>
-      
-      <div ref={containerRef} className="flex-1 w-full h-full bg-slate-100 relative z-0"></div>
-      
-      {/* Footer Controls */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-[1001] flex flex-col items-center gap-4 w-full px-10">
-         <div className="bg-white/95 backdrop-blur-xl p-5 px-7 rounded-[32px] border border-slate-100 shadow-2xl flex items-center gap-5 max-w-sm w-full animate-slide-up">
-            <div className="w-12 h-12 bg-green-50 rounded-2xl flex items-center justify-center text-green-600 border border-green-100 shadow-inner">
-               <svg className="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-            </div>
-            <div className="flex-1">
-               <p className="text-[12px] font-black text-slate-800 uppercase leading-none tracking-tight">Verified Coverage</p>
-               <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-2 leading-tight">Express pickup is available in {locationName.split(',')[0]}</p>
-            </div>
-         </div>
-         <button 
-           onClick={isMandatory ? onConfirmRegion : onClose} 
-           className="w-full bg-slate-900 text-white py-5 rounded-[30px] font-black uppercase text-[12px] tracking-[0.3em] shadow-2xl active:scale-[0.98] transition-all"
-         >
-           {isMandatory ? 'Continue to App' : 'Back to Home'}
-         </button>
+
+      <div className="absolute bottom-10 left-0 right-0 z-[2000] px-8 flex justify-center">
+        <button 
+          onClick={onClose} 
+          className="w-full max-w-xs bg-slate-900 text-white py-5 rounded-[28px] font-black uppercase text-[12px] tracking-widest shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-3 border border-slate-800"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
+          Close Map
+        </button>
       </div>
     </div>
   );
@@ -189,17 +117,49 @@ const App: React.FC = () => {
   const [showMap, setShowMap] = useState(false);
   const [repairHistory, setRepairHistory] = useState<any[]>([]);
   const [activeChats, setActiveChats] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const [isAuthChecking, setIsAuthChecking] = useState(true);
+  const [repairCoins, setRepairCoins] = useState("0");
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
   
-  const [locationName, setLocationName] = useState<string>("Locating Hub...");
   const [userCoords, setUserCoords] = useState<{lat: number, lng: number} | null>(null);
-  const [showMandatoryMap, setShowMandatoryMap] = useState(false);
-  const [isLocating, setIsLocating] = useState(false);
 
   const [isVisualSearching, setIsVisualSearching] = useState(false);
+  const [visualSearchData, setVisualSearchData] = useState<any>(null);
+  const [visualSearchImage, setVisualSearchImage] = useState<string | null>(null);
+  const [visualSearchError, setVisualSearchError] = useState<string | null>(null);
+
   const [selectedService, setSelectedService] = useState<string | undefined>(undefined);
   const [selectedExpert, setSelectedExpert] = useState<string | undefined>(undefined);
   const [chatContext, setChatContext] = useState<ServiceContext>('onsite');
+
+  useEffect(() => {
+    // Check if app is already running in standalone mode
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone;
+    setIsStandalone(!!standalone);
+
+    // Listen for install prompt
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   useEffect(() => {
     authService.getSession().then((session) => {
@@ -212,10 +172,7 @@ const App: React.FC = () => {
 
     const subscription = authService.onAuthStateChange((session) => {
       setSession(session);
-      if (session) {
-        setIsGuest(false);
-        triggerLocationPermissionFlow();
-      }
+      if (session) setIsGuest(false);
     });
 
     return () => {
@@ -223,74 +180,74 @@ const App: React.FC = () => {
     };
   }, []);
 
-  const triggerLocationPermissionFlow = () => {
-    setIsLocating(true);
+  useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const { latitude, longitude } = pos.coords;
-          setUserCoords({ lat: latitude, lng: longitude });
-          
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`);
-            const data = await res.json();
-            const addr = data.display_name || data.address.suburb || data.address.city || "Your Location";
-            setLocationName(addr);
-          } catch {
-            setLocationName("Nearby Metro Hub");
-          }
-          setIsLocating(false);
-          setShowMandatoryMap(true);
+        (pos) => {
+          setUserCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         },
-        (error) => {
-          console.warn("Location permission denied", error);
-          // Standard fallback
-          setLocationName("Indiranagar, Bangalore");
+        (err) => {
+          console.warn("Geolocation access denied or failed", err);
           setUserCoords({ lat: 12.9716, lng: 77.5946 });
-          setIsLocating(false);
-          setShowMandatoryMap(true);
         },
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 5000 }
       );
-    } else {
-      setIsLocating(false);
-      setShowMandatoryMap(true);
     }
-  };
+  }, []);
 
-  useEffect(() => {
-    if (activeTab === 'orders' && (session?.user?.id || isGuest)) fetchRepairHistory();
-    if (activeTab === 'chats') fetchChatHistory();
-  }, [activeTab, session, showChat]);
-
-  const fetchRepairHistory = async () => {
+  const fetchRepairHistory = useCallback(async () => {
     const uid = session?.user?.id || 'guest';
+    setLoadingHistory(true);
     const data = await dataService.getRepairs(uid);
     setRepairHistory(data || []);
-  };
+    setLoadingHistory(false);
+  }, [session, isGuest]);
 
-  const fetchChatHistory = async () => {
+  const fetchCoins = useCallback(async () => {
     const uid = session?.user?.id || 'guest';
+    const amount = await dataService.getUserCoins(uid);
+    setRepairCoins(amount.toLocaleString());
+  }, [session, isGuest]);
+
+  const fetchChatHistory = useCallback(async () => {
+    const uid = session?.user?.id || 'guest';
+    setLoadingHistory(true);
+    
+    const experts = await dataService.getContactedExperts(uid);
     const chats = [];
-    for (const vendor of VENDORS) {
-      const msgs = await dataService.getMessages(uid, vendor.name);
-      if (msgs && msgs.length > 0) {
-        chats.push({
-          vendor,
-          lastMsg: msgs[msgs.length - 1],
-          count: msgs.length
-        });
-      }
+    
+    for (const expertName of experts) {
+      const msgs = await dataService.getMessages(uid, expertName);
+      const knownVendor = VENDORS.find(v => v.name === expertName);
+      const knownCategory = CATEGORIES.find(c => c.name === expertName);
+      
+      const lastMsg = msgs && msgs.length > 0 ? msgs[msgs.length - 1] : null;
+      
+      chats.push({
+        expertName,
+        icon: knownVendor?.icon || knownCategory?.icon || '🛠️',
+        lastMsg: lastMsg,
+        count: msgs?.length || 0,
+        updatedAt: lastMsg ? new Date(lastMsg.created_at).getTime() : Date.now()
+      });
     }
+    
+    chats.sort((a, b) => b.updatedAt - a.updatedAt);
     setActiveChats(chats);
-  };
+    setLoadingHistory(false);
+  }, [session, isGuest]);
+
+  useEffect(() => {
+    fetchCoins();
+    if (activeTab === 'orders') fetchRepairHistory();
+    if (activeTab === 'chats') fetchChatHistory();
+  }, [activeTab, fetchRepairHistory, fetchChatHistory, fetchCoins, showChat]);
 
   const handleLogout = async () => {
     await authService.signOut();
     setSession(null);
     setIsGuest(false);
     setActiveTab('home');
-    setShowMandatoryMap(false);
   };
 
   const handleStartChat = (service?: string, expert?: string, context: ServiceContext = 'onsite') => {
@@ -300,191 +257,205 @@ const App: React.FC = () => {
     setShowChat(true);
   };
 
+  const handleHubSelect = (name: string, icon: string) => {
+    setShowMap(false);
+    handleStartChat(undefined, name, 'onsite');
+  };
+
+  const handleVisualSearch = async (base64Image: string) => {
+    setVisualSearchImage(base64Image);
+    setIsVisualSearching(true);
+    try {
+      const result = await performVisualSearch(base64Image);
+      setVisualSearchData(result);
+    } catch (err) {
+      setVisualSearchError("Analysis failed. Try again.");
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
-      case 'home': return <HomeView onStartChat={handleStartChat} onOpenMap={() => setShowMap(true)} onVisualSearch={() => setIsVisualSearching(true)} locationName={locationName} />;
+      case 'home': return <HomeView onStartChat={handleStartChat} onOpenMap={() => setShowMap(true)} onVisualSearch={handleVisualSearch} repairCoins={repairCoins} userCoords={userCoords} onInstall={handleInstallClick} showInstallBanner={!!deferredPrompt && !isStandalone} />;
       case 'chats': return <ChatsView />;
       case 'orders': return <OrdersView />;
       case 'rewards': return <RewardsView />;
       case 'profile': return (
-        <div className="p-4 pb-12 animate-fade-in">
-          {/* Main Profile Card */}
-          <div className="bg-white rounded-[40px] p-8 mb-6 shadow-xl border border-slate-50 relative overflow-hidden group">
-            <div className="flex items-center gap-5 relative z-10">
-              <div className="w-20 h-20 rounded-[28px] bg-blue-600 flex flex-col items-center justify-center border-4 border-white shadow-lg text-white font-black overflow-hidden relative">
+        <div className="p-4">
+          <div className="bg-white rounded-[40px] p-8 mb-6 shadow-xl border border-slate-50">
+            <div className="flex items-center gap-5 mb-8">
+              <div className="w-20 h-20 rounded-full bg-blue-600 flex flex-col items-center justify-center border-4 border-white shadow-lg text-white font-black overflow-hidden">
                  <div className="flex flex-col items-center">
                    <span className="text-[8px] text-white/70 font-black uppercase leading-tight">MEMBER</span>
                    <span className="text-[14px] text-white font-black uppercase leading-tight">PRO</span>
                  </div>
-                 <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
               </div>
               <div>
-                <h2 className="text-2xl font-black text-slate-800 tracking-tighter truncate max-w-[150px] uppercase">
-                  {session?.user?.username || session?.user?.email?.split('@')[0] || 'Guest Hub'}
-                </h2>
-                <p className="text-blue-600 text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 mt-1">
-                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span>
-                  {session ? 'Verified Account' : 'Guest Service Profile'}
-                </p>
+                <h2 className="text-2xl font-black text-slate-800 tracking-tighter truncate max-w-[150px]">{session?.user?.username || session?.user?.email?.split('@')[0] || 'Guest'}</h2>
+                <p className="text-blue-600 text-[10px] font-black uppercase tracking-widest">{session ? 'Verified User' : 'Guest Mode'}</p>
               </div>
             </div>
-            
-            <div className="mt-8 pt-6 border-t border-slate-50 space-y-4">
-               {session ? (
-                 <button onClick={handleLogout} className="w-full bg-slate-50 text-slate-400 hover:text-red-600 hover:bg-red-50 py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all">
-                   Sign Out Securely
-                 </button>
-               ) : (
-                 <button onClick={() => setIsGuest(false)} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-lg shadow-blue-100 active:scale-95 transition-all">
-                   Register Profile
-                 </button>
-               )}
+            <div className="space-y-6">
+              {!session && <button onClick={() => setIsGuest(false)} className="w-full bg-blue-600 text-white py-4 rounded-2xl font-black uppercase text-xs tracking-widest">Sign In to Sync</button>}
+              {session && <button onClick={handleLogout} className="w-full bg-red-50 text-red-600 py-4 rounded-2xl font-black uppercase text-xs tracking-widest">Sign Out</button>}
             </div>
-          </div>
-
-          {/* Support Section */}
-          <div className="space-y-4">
-             <h3 className="font-black text-slate-400 uppercase text-[9px] tracking-[0.25em] px-2 mb-2">Help & Support</h3>
-             
-             {/* Help Centre Card */}
-             <div className="bg-white p-5 rounded-[30px] border border-slate-100 flex items-center gap-4 shadow-sm active:scale-[0.98] transition-all cursor-pointer group">
-                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl group-hover:bg-blue-600 group-hover:text-white transition-all shadow-inner">🎧</div>
-                <div className="flex-1">
-                   <h4 className="font-black text-slate-800 uppercase text-xs tracking-tight">Help Centre</h4>
-                   <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">FAQs & Instant Support Chat</p>
-                </div>
-                <svg className="w-5 h-5 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
-             </div>
-
-             {/* Terms and Privacy Placeholder */}
-             <div className="bg-white p-5 rounded-[30px] border border-slate-100 flex items-center gap-4 shadow-sm active:scale-[0.98] transition-all cursor-pointer group">
-                <div className="w-12 h-12 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center text-xl group-hover:bg-slate-800 group-hover:text-white transition-all shadow-inner">📄</div>
-                <div className="flex-1">
-                   <h4 className="font-black text-slate-800 uppercase text-xs tracking-tight">Terms & Policies</h4>
-                   <p className="text-[9px] text-slate-400 font-bold uppercase mt-0.5">Our commitment to your security</p>
-                </div>
-                <svg className="w-5 h-5 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
-             </div>
-          </div>
-
-          <div className="mt-12 text-center">
-             <p className="text-[8px] text-slate-300 font-black uppercase tracking-[0.4em]">Repair It • Version 1.4.2</p>
           </div>
         </div>
       );
-      default: return <HomeView onStartChat={handleStartChat} onOpenMap={() => setShowMap(true)} onVisualSearch={() => setIsVisualSearching(true)} locationName={locationName} />;
+      default: return <HomeView onStartChat={handleStartChat} onOpenMap={() => setShowMap(true)} onVisualSearch={handleVisualSearch} repairCoins={repairCoins} userCoords={userCoords} />;
     }
   };
 
   const ChatsView = () => (
-    <div className="p-4 animate-fade-in">
+    <div className="p-4 animate-fade-in pb-20">
       <div className="bg-white rounded-[30px] p-6 mb-6 shadow-sm border border-slate-100">
         <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Active Chats</h2>
+        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">History of your conversations</p>
       </div>
-      {activeChats.length > 0 ? (
+      {loadingHistory && activeChats.length === 0 ? (
+        <div className="py-20 text-center animate-pulse">
+          <p className="text-[10px] font-black uppercase text-slate-300">Loading your chats...</p>
+        </div>
+      ) : activeChats.length > 0 ? (
         <div className="space-y-3">
-          {activeChats.map(c => (
+          {activeChats.map((c, i) => (
             <div 
-              key={c.vendor.id} 
-              onClick={() => handleStartChat(undefined, c.vendor.name, 'onsite')}
-              className="bg-white p-4 rounded-3xl border border-slate-50 shadow-sm flex items-center gap-4 active:scale-[0.98] transition-all cursor-pointer"
+              key={i} 
+              onClick={() => handleStartChat(undefined, c.expertName, 'onsite')}
+              className="bg-white p-4 rounded-3xl border border-slate-50 shadow-sm flex items-center gap-4 active:scale-[0.98] transition-all cursor-pointer hover:border-blue-100"
             >
-              <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-3xl border border-slate-100">{c.vendor.icon}</div>
+              <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-3xl border border-slate-100 flex-shrink-0">{c.icon}</div>
               <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-center mb-0.5">
-                  <h4 className="font-black text-slate-800 text-xs uppercase truncate">{c.vendor.name}</h4>
-                  <span className="text-[8px] text-slate-400 font-bold">{new Date(c.lastMsg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                  <h4 className="font-black text-slate-800 text-xs uppercase truncate">{c.expertName}</h4>
+                  <span className="text-[8px] text-slate-400 font-bold ml-2 whitespace-nowrap">
+                    {c.lastMsg ? new Date(c.lastMsg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'New'}
+                  </span>
                 </div>
-                <p className="text-[11px] text-slate-500 truncate font-medium">{c.lastMsg.text}</p>
+                <p className="text-[11px] text-slate-500 truncate font-medium">
+                  {c.lastMsg ? c.lastMsg.text : 'Start a conversation now...'}
+                </p>
               </div>
             </div>
           ))}
         </div>
       ) : (
-        <div className="py-20 text-center opacity-40">
-           <div className="text-4xl mb-4">💬</div>
-           <p className="text-slate-400 font-black uppercase text-[10px] tracking-widest">No conversations yet</p>
+        <div className="py-20 text-center">
+           <div className="text-4xl mb-4 opacity-20">💬</div>
+           <p className="text-slate-400 font-black uppercase text-[10px] tracking-widest">No conversation history</p>
+           <button onClick={() => setActiveTab('home')} className="mt-6 text-blue-600 font-black uppercase text-[10px] border-b-2 border-blue-600">Start a Repair</button>
         </div>
       )}
     </div>
   );
 
-  const OrdersView = () => (
-    <div className="p-4 animate-fade-in">
-      <div className="bg-white rounded-[30px] p-6 mb-6 shadow-sm border border-slate-100">
-        <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Booking History</h2>
-      </div>
-      {repairHistory.length > 0 ? (
-        repairHistory.map(r => (
-          <div key={r.id} className="bg-white p-6 rounded-[30px] border border-slate-100 shadow-sm mb-4 flex items-center justify-between">
-            <div>
-              <h4 className="font-black text-slate-800 uppercase text-xs">{r.service_name}</h4>
-              <p className="text-[10px] text-slate-400 mt-1 uppercase font-bold">{r.expert_name} • <span className="text-green-600">{r.status}</span></p>
-            </div>
-            <div className="text-right">
-              <p className="text-blue-600 font-black text-sm">{r.total_amount}</p>
-              <p className="text-[8px] text-slate-300 font-black uppercase">{new Date(r.created_at).toLocaleDateString()}</p>
-            </div>
-          </div>
-        ))
-      ) : <p className="text-center text-slate-400 font-bold uppercase text-[10px] py-20">No orders found</p>}
-    </div>
-  );
+  const OrdersView = () => {
+    const getArrivalTimeLabel = (arrivalTimeStr: string) => {
+      if (!arrivalTimeStr) return null;
+      const arrival = new Date(arrivalTimeStr);
+      const now = new Date();
+      const diffMs = arrival.getTime() - now.getTime();
+      const diffMins = Math.ceil(diffMs / 60000);
 
-  const RewardsView = () => {
-    const isLoggedIn = !!session;
+      if (diffMins <= 0) return "Arrived / Near You";
+      return `Arriving in ${diffMins} mins`;
+    };
 
     return (
-      <div className="p-4 animate-fade-in">
-        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 rounded-[40px] p-8 mb-6 shadow-xl relative overflow-hidden min-h-[220px] flex flex-col justify-center">
-          <div className="relative z-10">
-            {isLoggedIn ? (
-              <>
-                <p className="text-[10px] font-black uppercase text-indigo-200 tracking-[0.2em] mb-1">Total Balance</p>
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="text-4xl font-black text-white italic">2,450</span>
-                  <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-tighter">Repair Coins</span>
-                </div>
-                <button className="bg-white text-indigo-600 px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase shadow-lg">Redeem</button>
-              </>
-            ) : (
-              <div className="text-center">
-                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl text-white">🔒</div>
-                <p className="text-[10px] font-black uppercase text-indigo-100 tracking-[0.2em] mb-2">Rewards Locked</p>
-                <p className="text-[11px] text-indigo-200 font-bold mb-6 px-4 uppercase leading-relaxed tracking-wider">Please login with your email to see your balance and unlock rewards.</p>
-                <button 
-                  onClick={() => setIsGuest(false)}
-                  className="bg-white text-indigo-600 px-8 py-3 rounded-2xl text-[10px] font-black uppercase shadow-lg tracking-widest active:scale-95 transition-all"
-                >
-                  Log In Now
-                </button>
-              </div>
-            )}
-          </div>
-          <div className="absolute -right-4 -bottom-4 text-8xl opacity-10">🏆</div>
+      <div className="p-4 animate-fade-in pb-20">
+        <div className="bg-white rounded-[30px] p-6 mb-6 shadow-sm border border-slate-100">
+          <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">Booking History</h2>
+          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Track your pickups & repairs</p>
         </div>
-
-        {/* Locked Coupons Section for Guest */}
-        {!isLoggedIn && (
-           <div className="mt-8 space-y-4 opacity-50 pointer-events-none grayscale">
-             <h3 className="font-black text-slate-400 uppercase text-[9px] tracking-[0.2em] px-1">Member Exclusive Offers</h3>
-             {[1,2,3].map(i => (
-                <div key={i} className="bg-white p-5 rounded-[30px] border border-slate-100 flex items-center gap-4">
-                   <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-2xl">🎁</div>
-                   <div className="flex-1 h-12 bg-slate-50 rounded-xl"></div>
+        {repairHistory.length > 0 ? (
+          repairHistory.map(r => (
+            <div key={r.id} className="bg-white p-6 rounded-[35px] border border-slate-50 shadow-sm mb-4 relative overflow-hidden group">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-2xl border border-blue-100 group-hover:scale-110 transition-transform">
+                    {r.service_name.toLowerCase().includes('phone') ? '📱' : 
+                     r.service_name.toLowerCase().includes('ac') ? '❄️' : '🛠️'}
+                  </div>
+                  <div>
+                    <h4 className="font-black text-slate-800 uppercase text-xs leading-none">{r.service_name}</h4>
+                    <p className="text-[9px] text-slate-400 mt-1 uppercase font-black">{r.expert_name}</p>
+                  </div>
                 </div>
-             ))}
-           </div>
-        )}
+                <div className="text-right">
+                  <p className="text-blue-700 font-black text-sm leading-none">{r.total_amount}</p>
+                  <p className="text-[8px] text-slate-300 font-black uppercase mt-1">{new Date(r.created_at).toLocaleDateString()}</p>
+                </div>
+              </div>
+
+              {r.status === 'In Progress' && r.arrival_time && (
+                <div className="bg-blue-600 rounded-2xl p-4 flex items-center justify-between shadow-lg shadow-blue-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center text-white animate-bounce">🛵</div>
+                    <div>
+                      <p className="text-[8px] text-white/70 font-black uppercase tracking-widest leading-none">Pickup Partner</p>
+                      <p className="text-[11px] text-white font-black uppercase mt-1">{getArrivalTimeLabel(r.arrival_time)}</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-white active:scale-90 transition-transform">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {r.status !== 'In Progress' && (
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 rounded-full w-fit">
+                   <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                   <span className="text-[9px] font-black uppercase text-green-600 tracking-widest">{r.status}</span>
+                </div>
+              )}
+            </div>
+          ))
+        ) : <p className="text-center text-slate-400 font-bold uppercase text-[10px] py-20">No orders found yet</p>}
       </div>
     );
   };
 
-  const LocatingOverlay = () => (
-    <div className="fixed inset-0 z-[3000] bg-white flex flex-col items-center justify-center p-8 animate-fade-in text-center">
-       <div className="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mb-8"></div>
-       <h2 className="text-xl font-black uppercase tracking-tight text-slate-800">Permission Required</h2>
-       <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-4 leading-relaxed max-w-[200px]">Please allow location access to find repair hubs near you</p>
+  const RewardsView = () => (
+    <div className="p-4 animate-fade-in pb-20">
+      <div className={`${session || isGuest ? 'from-indigo-600 to-purple-700' : 'from-slate-400 to-slate-500'} bg-gradient-to-br rounded-[40px] p-8 mb-6 shadow-xl relative overflow-hidden`}>
+        <div className="relative z-10">
+          <p className="text-[10px] font-black uppercase text-white/70 tracking-[0.2em] mb-1">Total Balance</p>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-4xl font-black text-white italic">{repairCoins}</span>
+            <span className="bg-white/20 px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-tighter">Repair Coins</span>
+          </div>
+          {session ? (
+            <button className="bg-white text-indigo-600 px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase shadow-lg">Redeem Coins</button>
+          ) : (
+            <button onClick={() => setIsGuest(false)} className="bg-white text-slate-600 px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase shadow-lg">Login to Earn</button>
+          )}
+        </div>
+        <div className="absolute -right-4 -bottom-4 text-8xl opacity-10">🏆</div>
+      </div>
+
+      <h3 className="font-black text-slate-400 uppercase text-[9px] tracking-[0.2em] mb-4 px-1">Available Coupons</h3>
+      <div className="space-y-4">
+        {[
+          { title: 'Free Express Pickup', desc: 'Valid on first 3 orders', icon: '🛵', code: 'REPAIRIT3' },
+          { title: '₹100 Off Labor', desc: 'On orders above ₹500', icon: '🛠️', code: 'FIXER100' },
+          { title: 'Screen Guard Free', desc: 'With any Mobile repair', icon: '📱', code: 'GUARDIT' }
+        ].map((c, i) => (
+          <div key={i} className="bg-white p-5 rounded-[30px] border border-slate-100 flex items-center gap-4 shadow-sm relative overflow-hidden group">
+            <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-3xl group-hover:scale-110 transition-transform">{c.icon}</div>
+            <div className="flex-1">
+              <h4 className="font-black text-slate-800 uppercase text-xs">{c.title}</h4>
+              <p className="text-[10px] text-slate-400 font-bold mt-0.5">{c.desc}</p>
+              {session ? (
+                <div className="mt-2 text-[10px] font-black text-indigo-600 border border-indigo-100 rounded-lg px-3 py-1 inline-block uppercase bg-indigo-50/50">CODE: {c.code}</div>
+              ) : (
+                <div className="mt-2 text-[10px] font-black text-slate-400 border border-slate-100 rounded-lg px-3 py-1 inline-block uppercase bg-slate-50 italic">Login to unlock</div>
+              )}
+            </div>
+            <div className="absolute right-[-10px] top-1/2 -translate-y-1/2 w-4 h-8 bg-slate-50 rounded-l-full border border-slate-100"></div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 
@@ -492,54 +463,47 @@ const App: React.FC = () => {
 
   if (!session && !isGuest) {
     return (
-      <LoginView 
-        onLogin={(s) => { 
-          setSession(s); 
-          setIsGuest(false); 
-          triggerLocationPermissionFlow();
-        }} 
-        onSkip={() => { 
-          setIsGuest(true); 
-          triggerLocationPermissionFlow();
-        }} 
-      />
+      <div className="w-full max-w-md h-screen bg-white">
+        <LoginView onLogin={(s) => { setSession(s); setIsGuest(false); }} onSkip={() => setIsGuest(true)} />
+      </div>
     );
   }
 
   return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab} hideNav={showChat || showMap || isVisualSearching || showMandatoryMap || isLocating}>
-      {renderContent()}
+    <div className="flex flex-col h-screen bg-gray-50 w-full max-w-md relative shadow-2xl overflow-hidden ring-1 ring-slate-200">
+      <Layout activeTab={activeTab} onTabChange={setActiveTab} hideNav={showChat || showMap || isVisualSearching}>
+        {renderContent()}
+      </Layout>
+
       {showChat && (
         <ChatInterface 
           initialService={selectedService} 
           expertName={selectedExpert} 
           context={chatContext} 
           userId={session?.user?.id || 'guest'} 
-          onClose={() => { setShowChat(false); fetchChatHistory(); }} 
+          onClose={() => { setShowChat(false); fetchChatHistory(); fetchCoins(); }} 
         />
       )}
-      {(showMap || showMandatoryMap) && (
-        <MapView 
-          userCoords={userCoords} 
-          locationName={locationName} 
-          isMandatory={showMandatoryMap}
-          onConfirmRegion={() => setShowMandatoryMap(false)}
-          onClose={() => setShowMap(false)} 
-          onStartChat={handleStartChat} 
-        />
+      
+      {showMap && (
+        <MapView userCoords={userCoords} onClose={() => setShowMap(false)} onSelectHub={handleHubSelect} />
       )}
+      
       {isVisualSearching && (
-        <div className="fixed inset-0 z-[1200] bg-white flex items-center justify-center p-8">
-          <div className="text-center">
-            <div className="w-20 h-20 bg-blue-600 rounded-3xl mx-auto mb-6 flex items-center justify-center text-3xl text-white animate-pulse">📷</div>
-            <h2 className="text-xl font-black uppercase italic mb-2">Analyzing Item...</h2>
-            <button onClick={() => setIsVisualSearching(false)} className="mt-12 text-slate-400 font-black uppercase text-[9px] border-b-2 border-slate-200">Cancel</button>
-          </div>
-        </div>
+        <VisualSearchOverlay />
       )}
-      {isLocating && <LocatingOverlay />}
-    </Layout>
+    </div>
   );
 };
+
+const VisualSearchOverlay = () => (
+  <div className="absolute inset-0 z-[2000] bg-white flex items-center justify-center p-8">
+    <div className="text-center">
+      <div className="w-20 h-20 bg-blue-600 rounded-3xl mx-auto mb-6 flex items-center justify-center text-3xl text-white animate-pulse shadow-2xl shadow-blue-200">📷</div>
+      <h2 className="text-xl font-black uppercase italic mb-2 tracking-tight">Analyzing Item...</h2>
+      <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">Scanning local repair databases</p>
+    </div>
+  </div>
+);
 
 export default App;

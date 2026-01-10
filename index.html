@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Repair It - India's Last Minute Repair</title>
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#ffffff">
@@ -15,23 +15,28 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <style>
+        * {
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
+        }
+        *::-webkit-scrollbar {
+            display: none; /* Chrome/Safari/Webkit */
+        }
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
+            background-color: #e2e8f0; /* Darker slate to make the app stand out */
             margin: 0;
             padding: 0;
-            overflow-x: hidden;
+            overflow: hidden; /* Prevent body scroll, only app container scrolls */
             -webkit-tap-highlight-color: transparent;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         .technical-font {
             font-family: 'JetBrains Mono', monospace;
-        }
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
         }
         @keyframes slide-up {
             from { transform: translateY(100%); }
@@ -113,14 +118,12 @@
     "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
     "vite": "https://esm.sh/vite@^7.3.0",
     "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
-    "leaflet": "https://esm.sh/leaflet@1.9.4",
-    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.90.1"
+    "leaflet": "https://esm.sh/leaflet@1.9.4"
   }
 }
 </script>
 </head>
 <body>
-    <!-- Splash Screen -->
     <div id="splash-screen">
         <div class="splash-logo">
             <span class="splash-repair">REPAIR</span>
@@ -139,7 +142,6 @@
             hideSplash();
         } else {
             window.addEventListener('load', hideSplash);
-            // Fallback to ensure app is interactive even if load event takes too long
             setTimeout(hideSplash, 2500);
         }
     </script>
