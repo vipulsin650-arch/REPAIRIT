@@ -1,7 +1,7 @@
 
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import { ServiceContext } from "../types";
-
+const GEMINI_API_KEY = "AIzaSyCbC1PvY_IRpPVPl-8SchfWNm4RsvHvD2U";
 const REPAIR_COST_ALGORITHM = `
 COST ESTIMATION ALGORITHM (Strictly follow these brackets in ₹):
 1. REPAIR LABOR RANGES:
